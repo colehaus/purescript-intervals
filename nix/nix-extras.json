@@ -1,0 +1,7 @@
+{
+  "url": "git@github.com:colehaus/nix-extras.git",
+  "rev": "f5bcd067dbb4dc00e29fe2734f4fe8d28f1c977b",
+  "date": "2018-04-15T15:24:16-07:00",
+  "sha256": "07n2q11qg7zjazclkss2w0aqlfq7pf374qzd5zbx8qzm3zb4gd54",
+  "fetchSubmodules": true
+}
