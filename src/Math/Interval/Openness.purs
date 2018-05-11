@@ -8,6 +8,8 @@ data Openness = Closed | Open
 
 derive instance genericOpenness :: Generic Openness
 derive instance eqOpenness :: Eq Openness
+-- | WARNING: Not a semantic instance.
+derive instance ordOpenness :: Ord Openness
 instance showOpenness :: Show Openness where
   show = gShow
 
