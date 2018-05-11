@@ -14,6 +14,7 @@ import Math.Interval.Bound.Internal (Bound(..), Core(..), Finite(..), Lower(..),
 import Math.Interval.Bound.Internal (Bound, Finite(..), Lower, NegInf(..), PosInf(..), Upper) as ForReExport
 import Math.Interval.Openness (Openness)
 
+
 lower :: forall n. Either NegInf (Finite n) -> Lower n
 lower = MkLower <<< MkCore <<< either in1 in2
 

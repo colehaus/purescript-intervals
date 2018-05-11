@@ -12,13 +12,15 @@ import Data.Lattice (meet)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (unwrap)
 import Data.Ord (lessThanOrEq)
+import Partial.Unsafe (unsafeCrashWith)
+
 import Math.Interval.Bound (finCore, finite, injectLower, injectUpper, raw)
 import Math.Interval.Bound as Bound
 import Math.Interval.Bound.Internal (Lower(..), Upper(..))
 import Math.Interval.Internal (Empty(..), Interval(..), NonEmpty(..))
 import Math.Interval.Internal (Interval) as ForReExport
 import Math.Interval.Openness (Openness(..))
-import Partial.Unsafe (unsafeCrashWith)
+
 
 make ::
      forall n. Ord n
@@ -28,6 +30,9 @@ make ::
 make lower upper
   | injectLower lower <= injectUpper upper = Just (MkNonEmpty {lower, upper})
   | otherwise = Nothing
+
+unmake :: forall n. NonEmpty n -> { lower :: Lower n, upper :: Upper n }
+unmake (MkNonEmpty r) = r
 
 empty :: forall n. Interval n
 empty = MkInterval <<< Left $ MkEmpty

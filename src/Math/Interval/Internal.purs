@@ -7,8 +7,10 @@ import Data.Generic (class Generic, gShow)
 import Data.Lattice (class BoundedJoinSemilattice, class BoundedLattice, class BoundedMeetSemilattice, class JoinSemilattice, class Lattice, class MeetSemilattice, bottom, join, meet, top)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype, unwrap)
+
 import Math.Interval.Bound (Lower, Upper, finite, injectLower, injectUpper)
 import Math.Interval.Openness (Openness(..))
+
 
 data Empty = MkEmpty
 
@@ -23,7 +25,6 @@ newtype NonEmpty n = MkNonEmpty
   }
 
 derive instance genericNonEmpty :: Generic n => Generic (NonEmpty n)
-derive instance newtypeNonEmpty :: Newtype (NonEmpty n) _
 derive instance eqNonEmpty :: Eq n => Eq (NonEmpty n)
 derive instance ordNonEmpty :: Ord n => Ord (NonEmpty n)
 instance showNonEmpty :: Generic n => Show (NonEmpty n) where show = gShow

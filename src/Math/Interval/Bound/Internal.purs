@@ -6,7 +6,9 @@ import Data.Either.Nested (Either3, either3, in1, in2, in3)
 import Data.Generic (class Generic, gShow)
 import Data.Lattice (class BoundedJoinSemilattice, class BoundedLattice, class BoundedMeetSemilattice, class JoinSemilattice, class Lattice, class MeetSemilattice, join, meet)
 import Data.Newtype (class Newtype)
+
 import Math.Interval.Openness (Openness)
+
 
 data NegInf = MkNegInf
 
