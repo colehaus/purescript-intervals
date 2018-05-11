@@ -5,15 +5,14 @@ module Math.Interval
 
 import Prelude
 
-import Data.Bifunctor (lmap, rmap)
 import Data.Either (Either(..))
+import Data.Either.Nested (either3)
 import Data.Generic (class Generic, gShow)
 import Data.Lattice (meet)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (unwrap)
 import Data.Ord (lessThanOrEq)
-import Data.Tuple (Tuple(..))
-import Math.Interval.Bound (Finite(MkFinite), Lower(MkLower), Upper(MkUpper), injectLower, injectUpper)
+import Math.Interval.Bound (Lower(MkLower), Upper(MkUpper), finCore, finite, injectLower, injectUpper, raw)
 import Math.Interval.Bound as Bound
 import Math.Interval.Internal (Empty(..), Interval(..), NonEmpty(..))
 import Math.Interval.Internal (Interval) as ForReExport
@@ -29,27 +28,30 @@ make lower upper
   | injectLower lower <= injectUpper upper = Just (MkNonEmpty {lower, upper})
   | otherwise = Nothing
 
+empty :: forall n. Interval n
+empty = MkInterval <<< Left $ MkEmpty
+
 member :: forall n. Ord n => n -> Interval n -> Boolean
 member n (MkInterval (Left _)) = false
 member n (MkInterval (Right (MkNonEmpty { lower, upper }))) =
   n `Bound.greaterThanOrEq` injectLower lower && n `Bound.lessThanOrEq` injectUpper upper
 
 boundBelow :: forall n. Ord n => n -> Openness -> NonEmpty n -> Maybe (Interval n)
-boundBelow boundNum openness i@(MkNonEmpty { upper })
-  | Left boundNum == (lmap (_.bound <<< unwrap) <<< unwrap) upper && openness == Open =
-    Just <<< MkInterval <<< Left $ MkEmpty
+boundBelow boundNum openness i@(MkNonEmpty {upper})
+  | Just boundNum == (map (_.bound <<< unwrap) <<< finite) upper &&
+      openness == Open = Just empty
   | boundNum `member` MkInterval (Right i) =
     Just <<< MkInterval <<< Right $
-    MkNonEmpty { lower: MkLower <<< Right $ MkFinite { bound: boundNum, openness }, upper }
+    MkNonEmpty { lower: MkLower <<< finCore $ { bound: boundNum, openness }, upper }
   | otherwise = Nothing
 
 boundAbove :: forall n. Ord n => n -> Openness -> NonEmpty n -> Maybe (Interval n)
-boundAbove boundNum openness i@(MkNonEmpty { lower })
-  | Right boundNum == (rmap (_.bound <<< unwrap) <<< unwrap) lower && openness == Open =
-    Just <<< MkInterval <<< Left $ MkEmpty
+boundAbove boundNum openness i@(MkNonEmpty {lower})
+  | Just boundNum == (map (_.bound <<< unwrap) <<< finite) lower &&
+      openness == Open = Just empty
   | boundNum `member` MkInterval (Right i) =
     Just <<< MkInterval <<< Right $
-    MkNonEmpty { lower, upper: MkUpper <<< Left $ MkFinite { bound: boundNum, openness } }
+    MkNonEmpty { lower, upper: MkUpper <<< finCore $ { bound: boundNum, openness } }
   | otherwise = Nothing
 
 lessThanEverywhere :: forall a. Ord a => NonEmpty a -> NonEmpty a -> Boolean
@@ -58,10 +60,18 @@ lessThanEverywhere (MkNonEmpty {upper}) (MkNonEmpty {lower}) =
     GT -> false
     LT -> true
     EQ ->
-      case Tuple upper lower of
-        Tuple (MkUpper (Left (MkFinite u))) (MkLower (Right (MkFinite l))) ->
-          u . openness == Open || l . openness == Open
-        _ -> unsafeCrashWith "lessThanEverywhere"
+      either3
+        absurd
+        (\u ->
+           either3
+             (\_ -> unsafeCrashWith "lessThanEverywhere")
+             (\l -> u.openness == Open || l.openness == Open)
+             absurd <<<
+           raw $
+           lower)
+        (\_ -> unsafeCrashWith "lessThanEverywhere") <<<
+      raw $
+      upper
 infix 4 lessThanEverywhere as <!
 
 lessThanOrEqEverywhere :: forall a. Ord a => NonEmpty a -> NonEmpty a -> Boolean
@@ -116,8 +126,8 @@ certainly cmp l r =
 singleton :: forall n. n -> NonEmpty n
 singleton bound
   = MkNonEmpty
-  { lower: MkLower <<< Right $ MkFinite { bound, openness: Closed }
-  , upper: MkUpper <<< Left $ MkFinite { bound, openness: Closed }
+  { lower: MkLower <<< finCore $ { bound, openness: Closed }
+  , upper: MkUpper <<< finCore $ { bound, openness: Closed }
   }
 
 data Infinite n = Finite n | Infinity
@@ -129,20 +139,34 @@ instance showInfinite :: Generic n => Show (Infinite n) where
   show = gShow
 
 width :: forall n. Ring n => Interval n -> Infinite n
-width (MkInterval (Left MkEmpty)) = Finite zero
+width (MkInterval (Left _)) = Finite zero
 width (MkInterval (Right (MkNonEmpty {lower, upper}))) =
-  case Tuple lower upper of
-    Tuple (MkLower (Left _)) _ -> Infinity
-    Tuple _ (MkUpper (Right _)) -> Infinity
-    Tuple (MkLower (Right (MkFinite l))) (MkUpper (Left (MkFinite u))) ->
-      Finite $ u . bound - l . bound
+  either3
+    (const Infinity)
+    (\l ->
+       either3
+         absurd
+         (Finite <<< (_ - l . bound) <<< _ . bound)
+         (const Infinity) <<<
+       raw $
+       upper)
+    absurd <<<
+  raw $
+  lower
 
 -- | Where both exist and are finite, upper bound divided by lower bound
 normalizedWidth :: forall n. EuclideanRing n => Ring n => Interval n -> Infinite n
-normalizedWidth (MkInterval (Left MkEmpty)) = Finite zero
+normalizedWidth (MkInterval (Left _)) = Finite zero
 normalizedWidth (MkInterval (Right (MkNonEmpty { lower, upper }))) =
-  case Tuple lower upper of
-    Tuple (MkLower (Left _)) _ -> Infinity
-    Tuple _ (MkUpper (Right _)) -> Infinity
-    Tuple (MkLower (Right (MkFinite l))) (MkUpper (Left (MkFinite u))) ->
-      Finite $ u . bound / l . bound
+  either3
+    (const Infinity)
+    (\l ->
+       either3
+         absurd
+         (Finite <<< (_ / l.bound) <<< _.bound)
+         (const Infinity) <<<
+       raw $
+       upper)
+    absurd <<<
+  raw $
+  lower

@@ -2,15 +2,13 @@ module Math.Interval.Bound where
 
 import Prelude hiding (eq,join)
 
-import Data.Either (Either(..), either)
 import Data.Either.Nested (Either3, at1, at2, at3, either3, in1, in2, in3)
 import Data.Generic (class Generic, gShow)
-import Data.Lattice (class BoundedJoinSemilattice, class BoundedMeetSemilattice, class JoinSemilattice, class MeetSemilattice, join, meet)
+import Data.Lattice (class BoundedJoinSemilattice, class BoundedLattice, class BoundedMeetSemilattice, class JoinSemilattice, class Lattice, class MeetSemilattice, join, meet)
 import Data.Maybe (Maybe(..), maybe)
-import Data.Newtype (class Newtype, unwrap)
-import Prelude as Prelude
-
+import Data.Newtype (class Newtype, un, unwrap, wrap)
 import Math.Interval.Openness (Openness)
+
 
 data NegInf = MkNegInf
 
@@ -41,6 +39,8 @@ instance meetFinite :: Ord n => MeetSemilattice (Finite n) where
        LT -> l
        EQ -> { bound: l.bound, openness: l.openness || r.openness }
 
+instance latticeFinite :: Ord n => Lattice (Finite n) where
+
 data PosInf = MkPosInf
 
 derive instance genericPosInf :: Generic PosInf
@@ -48,90 +48,90 @@ derive instance eqPosInf :: Eq PosInf
 derive instance ordPosInf :: Ord PosInf
 instance showPosInf :: Show PosInf where show = gShow
 
-newtype Lower n = MkLower (Either NegInf (Finite n))
+newtype Core n l r = MkCore (Either3 l (Finite n) r)
 
-derive instance genericLower :: Generic n => Generic (Lower n)
+derive instance genericCore :: (Generic n, Generic l, Generic r) => Generic (Core n l r)
+derive instance newtypeCore :: Newtype (Core n l r) _
+derive instance eqCore :: (Eq n, Eq l, Eq r) => Eq (Core n l r)
+derive instance ordCore :: (Ord n, Ord l, Ord r) => Ord (Core n l r)
+instance showCore :: (Generic n, Generic l, Generic r) => Show (Core n l r) where show = gShow
+
+newtype Lower n = MkLower (Core n NegInf Void)
+
+derive instance genericLower :: (Generic n) => Generic (Lower n)
 derive instance newtypeLower :: Newtype (Lower n) _
-derive instance eqLower :: Eq n => Eq (Lower n)
-derive instance ordLower :: Ord n => Ord (Lower n)
-instance showLower :: Generic n => Show (Lower n) where show = gShow
+derive instance eqLower :: (Eq n) => Eq (Lower n)
+derive instance ordLower :: (Ord n) => Ord (Lower n)
+instance showLower :: (Generic n) => Show (Lower n) where show = gShow
 
-instance joinLower :: Ord n => JoinSemilattice (Lower n) where
-  join (MkLower l) (MkLower r) =
-    MkLower $
-    either
-      (const r)
-      (\lf -> either (const <<< Right $ lf) (Right <<< join lf) r)
-      l
+newtype Upper n = MkUpper (Core n Void PosInf)
 
-instance meetLower :: Ord n => MeetSemilattice (Lower n) where
-  meet (MkLower l) (MkLower r) =
-    MkLower $ either Left (\lf -> either Left (Right <<< meet lf) r) l
-
-instance boundedJoinLower :: Ord n => BoundedJoinSemilattice (Lower n) where
-  bottom = MkLower <<< Left $ MkNegInf
-
-newtype Upper n = MkUpper (Either (Finite n) PosInf)
-
-derive instance genericUpper :: Generic n => Generic (Upper n)
+derive instance genericUpper :: (Generic n) => Generic (Upper n)
 derive instance newtypeUpper :: Newtype (Upper n) _
-derive instance eqUpper :: Eq n => Eq (Upper n)
-derive instance ordUpper :: Ord n => Ord (Upper n)
-instance showUpper :: Generic n => Show (Upper n) where show = gShow
+derive instance eqUpper :: (Eq n) => Eq (Upper n)
+derive instance ordUpper :: (Ord n) => Ord (Upper n)
+instance showUpper :: (Generic n) => Show (Upper n) where show = gShow
 
-instance joinUpper :: Ord n => JoinSemilattice (Upper n) where
-  join (MkUpper l) (MkUpper r) =
-    MkUpper $ either (\lf -> either (Left <<< join lf) Right r) Right l
+newtype Bound n = MkBound (Core n NegInf PosInf)
 
-instance meetUpper :: Ord n => MeetSemilattice (Upper n) where
-  meet (MkUpper l) (MkUpper r) =
-    MkUpper $
-    either (\lf -> either (Left <<< meet lf) (const <<< Left $ lf) r) (const r) l
-
-instance boundedMeetUpper :: Ord n => BoundedMeetSemilattice (Upper n) where
-  top = MkUpper <<< Right $ MkPosInf
-
-newtype Bound n = MkBound (Either3 NegInf (Finite n) PosInf)
-
-derive instance genericBound :: Generic n => Generic (Bound n)
+derive instance genericBound :: (Generic n) => Generic (Bound n)
 derive instance newtypeBound :: Newtype (Bound n) _
-derive instance eqBound :: Eq n => Eq (Bound n)
-derive instance ordBound :: Ord n => Ord (Bound n)
-instance showBound :: Generic n => Show (Bound n) where show = gShow
+derive instance eqBound :: (Eq n) => Eq (Bound n)
+derive instance ordBound :: (Ord n) => Ord (Bound n)
+instance showBound :: (Generic n) => Show (Bound n) where show = gShow
 
 instance boundedBound :: Ord n => Bounded (Bound n) where
-  top = MkBound (in3 MkPosInf)
-  bottom = MkBound (in1 MkNegInf)
+  top = MkBound (MkCore (in3 MkPosInf))
+  bottom = MkBound (MkCore (in1 MkNegInf))
 
-instance joinBound :: Ord n => JoinSemilattice (Bound n) where
-  join (MkBound l) (MkBound r) =
-    MkBound $
+
+instance joinCore :: Ord n => JoinSemilattice (Core n l r) where
+  join (MkCore l) (MkCore r) =
+    MkCore $
     either3
       (const r)
       (\lf -> either3 (const <<< in2 $ lf) (in2 <<< join lf) in3 r)
       in3
       l
+derive newtype instance joinLower :: Ord n => JoinSemilattice (Lower n)
+derive newtype instance joinUpper :: Ord n => JoinSemilattice (Upper n)
+derive newtype instance joinBound :: Ord n => JoinSemilattice (Bound n)
 
-instance boundedJoinBound :: Ord n => BoundedJoinSemilattice (Bound n) where
-  bottom = Prelude.bottom
+instance boundedJoinCore :: Ord n => BoundedJoinSemilattice (Core n NegInf r) where
+  bottom = MkCore <<< in1 $ MkNegInf
+derive newtype instance boundedJoinLower :: Ord n => BoundedJoinSemilattice (Lower n)
+derive newtype instance boundedJoinBound :: Ord n => BoundedJoinSemilattice (Bound n)
 
-instance meetBound :: Ord n => MeetSemilattice (Bound n) where
-  meet (MkBound l) (MkBound r) =
-    MkBound $
+instance meetCore :: Ord n => MeetSemilattice (Core n l r) where
+  meet (MkCore l) (MkCore r) =
+    MkCore $
     either3
       in1
       (\lf -> either3 in1 (in2 <<< meet lf) (const <<< in2 $ lf) r)
       (const r)
       l
+derive newtype instance meetLower :: Ord n => MeetSemilattice (Lower n)
+derive newtype instance meetUpper :: Ord n => MeetSemilattice (Upper n)
+derive newtype instance meenBound :: Ord n => MeetSemilattice (Bound n)
 
-instance boundedMeetBound :: Ord n => BoundedMeetSemilattice (Bound n) where
-  top = Prelude.top
+instance boundedMeetCore :: Ord n => BoundedMeetSemilattice (Core n l PosInf) where
+  top = MkCore <<< in3 $ MkPosInf
+derive newtype instance boundedMeetUpper :: Ord n => BoundedMeetSemilattice (Upper n)
+derive newtype instance boundedMeetBound :: Ord n => BoundedMeetSemilattice (Bound n)
+
+instance latticeCore :: Ord n => Lattice (Core n l r)
+derive newtype instance latticeLower :: Ord n => Lattice (Lower n)
+derive newtype instance latticeUpper :: Ord n => Lattice (Upper n)
+derive newtype instance latticeBound :: Ord n => Lattice (Bound n)
+
+instance boundedLatticeCore :: Ord n => BoundedLattice (Core n NegInf PosInf)
+derive newtype instance boundedLatticeBound :: Ord n => BoundedLattice (Bound n)
 
 lessThan :: forall n. Ord n => n -> Bound n -> Boolean
-lessThan n = either3 (const false) ((n < _) <<< _.bound <<< unwrap) (const true) <<< unwrap
+lessThan n = either3 (const false) ((n < _) <<< _.bound <<< unwrap) (const true) <<< unwrap <<< unwrap
 
 lessThanOrEq :: forall n. Ord n => n -> Bound n -> Boolean
-lessThanOrEq n = either3 (const false) ((n <= _) <<< _.bound <<< unwrap) (const true) <<< unwrap
+lessThanOrEq n = either3 (const false) ((n <= _) <<< _.bound <<< unwrap) (const true) <<< unwrap <<< unwrap
 
 greaterThan :: forall n. Ord n => n -> Bound n -> Boolean
 greaterThan n b = not $ lessThanOrEq n b
@@ -146,32 +146,42 @@ notEq :: forall n. Eq n => n -> Bound n -> Boolean
 notEq = not <<< eq
 
 negInf :: forall n. Bound n -> Boolean
-negInf = at1 false (const true) <<< unwrap
+negInf = at1 false (const true) <<< unwrap <<< unwrap
 
 posInf :: forall n. Bound n -> Boolean
-posInf = at3 false (const true) <<< unwrap
+posInf = at3 false (const true) <<< unwrap <<< unwrap
 
-finite :: forall n. Bound n -> Maybe (Finite n)
-finite = at2 Nothing Just <<< unwrap
+finite :: forall n l r t. Newtype t (Core n l r) => t -> Maybe (Finite n)
+finite = at2 Nothing Just <<< un MkCore <<< unwrap
 
 injectUpper :: forall n. Upper n -> Bound n
-injectUpper = MkBound <<< either in2 in3 <<< unwrap
+injectUpper = wrap <<< MkCore <<< either3 absurd in2 in3 <<< un MkCore <<< unwrap
 
 projectUpper :: forall n. Bound n -> Maybe (Upper n)
 projectUpper =
   either3
     (const Nothing)
-    (Just <<< MkUpper <<< Left)
-    (Just <<< MkUpper <<< Right) <<<
-  unwrap
+    (Just <<< wrap <<< MkCore <<< in2)
+    (Just <<< wrap <<< MkCore <<< in3) <<<
+  un MkCore <<< unwrap
 
 injectLower :: forall n. Lower n -> Bound n
-injectLower = MkBound <<< either in1 in2 <<< unwrap
+injectLower = wrap <<< MkCore <<< either3 in1 in2 absurd <<< un MkCore <<< unwrap
 
 projectLower :: forall n. Bound n -> Maybe (Lower n)
 projectLower =
   either3
-    (Just <<< MkLower <<< Left)
-    (Just <<< MkLower <<< Right)
+    (Just <<< wrap <<< MkCore <<< in1)
+    (Just <<< wrap <<< MkCore <<< in2)
     (const Nothing) <<<
-  unwrap
+  un MkCore <<< unwrap
+
+raw ::
+     forall l n r t.
+     Newtype (t n) (Core n l r)
+  => t n
+  -> Either3 l { bound :: n, openness :: Openness } r
+raw = either3 in1 (in2 <<< unwrap) in3 <<< un MkCore <<< unwrap
+
+finCore :: forall n l r. { bound :: n , openness :: Openness} -> Core n l r
+finCore = MkCore <<< in2 <<< MkFinite
