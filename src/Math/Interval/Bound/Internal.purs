@@ -29,7 +29,8 @@ newtype Finite n = MkFinite { bound :: n, openness :: Openness }
 derive instance genericFinite :: Generic n => Generic (Finite n)
 derive instance newtypeFinite :: Newtype (Finite n) _
 derive instance eqFinite :: Eq n => Eq (Finite n)
-derive instance ordFinite :: Ord n => Ord (Finite n)
+instance ordFinite :: Ord n => Ord (Finite n) where
+  compare (MkFinite l) (MkFinite r) = compare l.bound r.bound
 instance showFinite :: Generic n => Show (Finite n) where show = gShow
 
 instance joinFinite :: Ord n => JoinSemilattice (Finite n) where

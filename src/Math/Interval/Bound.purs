@@ -24,10 +24,10 @@ bound :: forall n. Either3 NegInf (Finite n) PosInf -> Bound n
 bound = MkBound <<< MkCore <<< either3 in1 in2 in3
 
 lessThan :: forall n. Ord n => n -> Bound n -> Boolean
-lessThan n = either3 (const false) ((n < _) <<< _.bound <<< unwrap) (const true) <<< unwrap <<< unwrap
+lessThan n = either3 (const false) ((n < _) <<< _.bound) (const true) <<< raw
 
 lessThanOrEq :: forall n. Ord n => n -> Bound n -> Boolean
-lessThanOrEq n = either3 (const false) ((n <= _) <<< _.bound <<< unwrap) (const true) <<< unwrap <<< unwrap
+lessThanOrEq n = either3 (const false) ((n <= _) <<< _.bound) (const true) <<< raw
 
 greaterThan :: forall n. Ord n => n -> Bound n -> Boolean
 greaterThan n b = not $ lessThanOrEq n b
