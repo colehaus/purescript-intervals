@@ -12,8 +12,9 @@ import Data.Lattice (meet)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (unwrap)
 import Data.Ord (lessThanOrEq)
-import Math.Interval.Bound (Lower(MkLower), Upper(MkUpper), finCore, finite, injectLower, injectUpper, raw)
+import Math.Interval.Bound (finCore, finite, injectLower, injectUpper, raw)
 import Math.Interval.Bound as Bound
+import Math.Interval.Bound.Internal (Lower(..), Upper(..))
 import Math.Interval.Internal (Empty(..), Interval(..), NonEmpty(..))
 import Math.Interval.Internal (Interval) as ForReExport
 import Math.Interval.Openness (Openness(..))
