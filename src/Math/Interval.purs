@@ -34,6 +34,10 @@ make lower upper
 forget :: forall n. NonEmpty n -> Interval n
 forget n = MkInterval (Right n)
 
+nonEmpty :: forall n. Interval n -> Maybe (NonEmpty n)
+nonEmpty (MkInterval (Right r)) = Just r
+nonEmpty _ = Nothing
+
 unmake :: forall n. NonEmpty n -> { lower :: Lower n, upper :: Upper n }
 unmake (MkNonEmpty r) = r
 
