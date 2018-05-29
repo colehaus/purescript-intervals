@@ -31,6 +31,9 @@ make lower upper
   | injectLower lower <= injectUpper upper = Just (MkNonEmpty {lower, upper})
   | otherwise = Nothing
 
+forget :: forall n. NonEmpty n -> Interval n
+forget n = MkInterval (Right n)
+
 unmake :: forall n. NonEmpty n -> { lower :: Lower n, upper :: Upper n }
 unmake (MkNonEmpty r) = r
 
