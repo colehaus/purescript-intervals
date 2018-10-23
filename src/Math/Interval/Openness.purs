@@ -2,15 +2,16 @@ module Math.Interval.Openness where
 
 import Prelude
 
-import Data.Generic (class Generic, gShow)
+import Data.Generic.Rep (class Generic)
+import Data.Generic.Rep.Show (genericShow)
 
 
 data Openness = Closed | Open
 
-derive instance genericOpenness :: Generic Openness
+derive instance genericOpenness :: Generic Openness _
 derive instance eqOpenness :: Eq Openness
 instance showOpenness :: Show Openness where
-  show = gShow
+  show = genericShow
 
 -- It's maybe questionable that `Open` corresponds to `false` rather than vice versa
 instance opennessHeyting :: HeytingAlgebra Openness where

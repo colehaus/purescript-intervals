@@ -3,7 +3,8 @@ module Math.Interval.Internal where
 import Prelude hiding (bottom,join,top)
 
 import Data.Either (Either(..))
-import Data.Generic (class Generic, gShow)
+import Data.Generic.Rep (class Generic)
+import Data.Generic.Rep.Show (genericShow)
 import Data.Lattice (class BoundedJoinSemilattice, class BoundedLattice, class BoundedMeetSemilattice, class JoinSemilattice, class Lattice, class MeetSemilattice, bottom, join, meet, top)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (class Newtype, unwrap)
@@ -14,29 +15,29 @@ import Math.Interval.Openness (Openness(..))
 
 data Empty = MkEmpty
 
-derive instance genericEmpty :: Generic Empty
+derive instance genericEmpty :: Generic Empty _
 derive instance eqEmpty :: Eq Empty
 derive instance ordEmpty :: Ord Empty
-instance showEmpty :: Show Empty where show = gShow
+instance showEmpty :: Show Empty where show = genericShow
 
 newtype NonEmpty n = MkNonEmpty
   { lower :: Lower n
   , upper :: Upper n
   }
 
-derive instance genericNonEmpty :: Generic n => Generic (NonEmpty n)
+derive instance genericNonEmpty :: Generic (NonEmpty n) _
 derive instance eqNonEmpty :: Eq n => Eq (NonEmpty n)
 derive instance ordNonEmpty :: Ord n => Ord (NonEmpty n)
-instance showNonEmpty :: Generic n => Show (NonEmpty n) where show = gShow
+instance showNonEmpty :: Show n => Show (NonEmpty n) where show = genericShow
 
 newtype Interval n = MkInterval (Either Empty (NonEmpty n))
 
-derive instance genericInterval :: Generic n => Generic (Interval n)
+derive instance genericInterval :: Generic (Interval n) _
 derive instance newtypeInterval :: Newtype (Interval n) _
 derive instance eqInterval :: Eq n => Eq (Interval n)
 -- | WARNING: Not a semantic instance. Just so we can put it inside a map.
 derive instance ordInterval :: Ord n => Ord (Interval n)
-instance showInterval :: Generic n => Show (Interval n) where show = gShow
+instance showInterval :: Show n => Show (Interval n) where show = genericShow
 
 instance joinEmpty :: JoinSemilattice Empty where
   join _ _ = MkEmpty

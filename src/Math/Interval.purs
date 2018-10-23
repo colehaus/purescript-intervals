@@ -7,7 +7,8 @@ import Prelude
 
 import Data.Either (Either(..))
 import Data.Either.Nested (either3)
-import Data.Generic (class Generic, gShow)
+import Data.Generic.Rep (class Generic)
+import Data.Generic.Rep.Show (genericShow)
 import Data.Lattice (meet)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (unwrap)
@@ -145,11 +146,11 @@ singleton bound
 
 data Infinite n = Finite n | Infinity
 
-derive instance genericInfinite :: Generic n => Generic (Infinite n)
+derive instance genericInfinite :: Generic (Infinite n) _
 derive instance eqInfinite :: Eq n => Eq (Infinite n)
 derive instance ordInfinite :: Ord n => Ord (Infinite n)
-instance showInfinite :: Generic n => Show (Infinite n) where
-  show = gShow
+instance showInfinite :: Show n => Show (Infinite n) where
+  show = genericShow
 
 width :: forall n. Ring n => Interval n -> Infinite n
 width (MkInterval (Left _)) = Finite zero
